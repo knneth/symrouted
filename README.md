@@ -56,8 +56,8 @@ This is replicated into two tables, with one steering rule for each address on t
 ```shell
 $ ip rule
 0:	from all lookup local 
-32764:	from 10.0.0.1 lookup 1002
-32765:	from 192.168.0.1 lookup 1003
+32764:	from 10.0.0.2 lookup 1002
+32765:	from 192.168.0.2 lookup 1003
 32766:	from all lookup main 
 32767:	from all lookup default
 $ ip route show table 1002
