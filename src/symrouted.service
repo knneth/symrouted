@@ -1,0 +1,15 @@
+[Unit]
+Description=Symmetric Routing Daemon
+ConditionCapability=CAP_NET_ADMIN
+
+[Service]
+Type=simple
+AmbientCapabilities=CAP_NET_ADMIN
+ExecStart=/usr/sbin/symrouted
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+KillMode=process
+
+[Install]
+WantedBy=default.target
