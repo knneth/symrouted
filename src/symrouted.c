@@ -163,18 +163,24 @@ static void addr_rule_new(struct nl_object *obj, void *sk)
 
 int main(int argc, char **argv)
 {
-    struct nl_sock *sk = nl_socket_alloc();
     struct nl_cache_mngr *mngr;
     struct nl_cache *routes;
     struct nl_cache *rules;
     struct nl_cache *addrs;
+    struct nl_sock *sk;
     int err;
 
-    if (!sk)
+    // No options yet
+    if (getopt(argc, argv, "") != -1) {
+        fprintf(stderr, "Usage: %s\n", argv[0]);
+        return EINVAL;
+    }
+
+    if (!(sk = nl_socket_alloc()))
         return ENOMEM;
-    if ((err = nl_cache_mngr_alloc(NULL, NETLINK_ROUTE, NL_AUTO_PROVIDE, &mngr)) < 0)
-        goto out_nlerr;
     if ((err = nl_connect(sk, NETLINK_ROUTE)) < 0)
+        goto out_nlerr;
+    if ((err = nl_cache_mngr_alloc(NULL, NETLINK_ROUTE, NL_AUTO_PROVIDE, &mngr)) < 0)
         goto out_nlerr;
     if ((err = nl_cache_mngr_add(mngr, "route/route", mirror_route_update, sk, &routes)) < 0)
         goto out_nlerr;
