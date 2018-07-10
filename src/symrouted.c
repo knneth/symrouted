@@ -37,7 +37,9 @@ static void route_flush_ours(struct nl_object *obj, void *sk)
         return;
 
     dump_obj((struct nl_object*) rt, NL_ACT_DEL, "route");
-    rtnl_route_delete((struct nl_sock*) sk, rt, 0);
+    errno = rtnl_route_delete((struct nl_sock*) sk, rt, 0);
+    if (errno < 0)
+        nl_perror(errno, __func__);
 }
 
 static void rule_flush_ours(struct nl_object *obj, void *sk)
@@ -48,7 +50,9 @@ static void rule_flush_ours(struct nl_object *obj, void *sk)
         return;
 
     dump_obj((struct nl_object*) rule, NL_ACT_DEL, "rule");
-    rtnl_rule_delete((struct nl_sock*) sk, rule, 0);
+    errno = rtnl_rule_delete((struct nl_sock*) sk, rule, 0);
+    if (errno < 0)
+        nl_perror(errno, __func__);
 }
 
 static void mirror_route_update(struct nl_cache *cache, struct nl_object *obj, int action, void *sk)
