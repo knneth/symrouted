@@ -23,7 +23,7 @@ $ ./buildrpm.sh
 
 3. Install RPM:
 ```shell
-$ sudo rpm -i ~/rpmbuild/RPMS/x86_64/symrouted-0.1.0-1.el7.x86_64.rpm
+$ sudo rpm -i ~/rpmbuild/RPMS/x86_64/symrouted-0.1.1-1.el7.x86_64.rpm
 ```
 
 4. Activate symrouted via systemd:
