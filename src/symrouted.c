@@ -23,6 +23,8 @@ static void dump_obj(struct nl_object *obj, int action, const char *prefix)
         fputs("  new ", dp.dp_fd);
     else if (action == NL_ACT_DEL)
         fputs("  del ", dp.dp_fd);
+    else if (action == NL_ACT_CHANGE)
+        fputs("  chg ", dp.dp_fd);
 
     fputs(prefix, dp.dp_fd);
     fputc(' ', dp.dp_fd);
@@ -116,6 +118,9 @@ static void addr_rule_update(struct nl_cache *cache, struct nl_object *obj, int 
     int ifindex;
 
     if (action != NL_ACT_NEW && action != NL_ACT_DEL) {
+        // Ignore attribute changes
+        if (action == NL_ACT_CHANGE)
+            return;
         printf("%s: unhandled action %d\n", __func__, action);
         return;
     }
