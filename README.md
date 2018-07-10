@@ -13,7 +13,7 @@ The developers platform is CentOS 7.5.
 
 1. Install neccessary build utilities. Something like (YMMV):
 ```shell
-$ sudo yum install gcc rpm-build libnl3-devel
+$ sudo yum install make gcc rpm-build libnl3-devel
 ```
 
 2. Build RPM using supplied script:
