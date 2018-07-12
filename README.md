@@ -1,5 +1,7 @@
 # Symmetric Routing Daemon
 
+[![Build Status](https://travis-ci.org/knneth/symrouted.svg?branch=master)](https://travis-ci.org/knneth/symrouted)
+
 The symrouted program uses routing policies to allow traffic from different
 local IP addresses to be forwarded to a different next hop (gateway).
 
