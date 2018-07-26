@@ -63,13 +63,15 @@ static void mirror_route_update(struct nl_cache *cache, struct nl_object *obj, i
     struct rtnl_nexthop *nh;
     int ifindex;
 
+    // Ignore events outside Main Routing Table
+    if (rtnl_route_get_table(rt) != RT_TABLE_MAIN)
+        return;
+
     if (action != NL_ACT_NEW && action != NL_ACT_DEL) {
         printf("%s: unhandled action %d\n", __func__, action);
         return;
     }
 
-    if (rtnl_route_get_table(rt) != RT_TABLE_MAIN)
-        return;
     // Skip multipath destinations
     if (rtnl_route_get_nnexthops(rt) != 1)
         return;
