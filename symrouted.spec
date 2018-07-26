@@ -46,6 +46,9 @@ rm -rf "$RPM_BUILD_ROOT"
 %license LICENSE
 
 %changelog
+* Tue Jul 26 2018 Kenneth Klette Jonassen <kenneth@bridgetech.tv> - 0.1.2
+- Support NL_ACT_CHANGE routing events
+
 * Tue Jul 10 2018 Kenneth Klette Jonassen <kenneth@bridgetech.tv> - 0.1.1
 - Exit when unknown command line arguments are given
 - Warn when initial cleanup fails
