@@ -67,7 +67,7 @@ static void mirror_route_update(struct nl_cache *cache, struct nl_object *obj, i
     if (rtnl_route_get_table(rt) != RT_TABLE_MAIN)
         return;
 
-    if (action != NL_ACT_NEW && action != NL_ACT_DEL) {
+    if (action != NL_ACT_NEW && action != NL_ACT_DEL && action != NL_ACT_CHANGE) {
         printf("%s: unhandled action %d\n", __func__, action);
         return;
     }
@@ -89,8 +89,13 @@ static void mirror_route_update(struct nl_cache *cache, struct nl_object *obj, i
     rtnl_route_set_table(rt, 1000 + ifindex);
     dump_obj((struct nl_object*) rt, action, "route");
 
-    if (action == NL_ACT_NEW) {
-        errno = rtnl_route_add((struct nl_sock*) sk, rt, NLM_F_EXCL);
+    if (action == NL_ACT_NEW || action == NL_ACT_CHANGE) {
+        int flags = 0;
+
+        if (action == NL_ACT_CHANGE)
+            flags |= NLM_F_REPLACE;
+
+        errno = rtnl_route_add((struct nl_sock*) sk, rt, flags);
     } else if (action == NL_ACT_DEL) {
         // We replicate routes created by the kernel (e.g. directly attached routes),
         // and the kernel seems to remove our replicated routes as well. This seems
