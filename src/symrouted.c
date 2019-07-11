@@ -75,6 +75,7 @@ static void mirror_route_update(struct nl_cache *cache, struct nl_object *obj, i
     // Skip multipath destinations
     if (rtnl_route_get_nnexthops(rt) != 1)
         return;
+    // Retrieve nexthop for route
     nh = rtnl_route_nexthop_n(rt, 0);
     if (!nh)
         return;
@@ -82,6 +83,14 @@ static void mirror_route_update(struct nl_cache *cache, struct nl_object *obj, i
     ifindex = rtnl_route_nh_get_ifindex(nh);
     if (ifindex <= 1)
         return;
+    // Skip IPv6 link-local destinations
+    if (rtnl_route_get_family(rt) == AF_INET6) {
+        uint8_t *addr = nl_addr_get_binary_addr(rtnl_route_get_dst(rt));
+        if (addr[0] == 0xfe) {
+            return;
+        }
+    }
+    // Clone route so that we may configure our modified version
     rt = (struct rtnl_route*) nl_object_clone(obj);
     if (!rt)
         return;
