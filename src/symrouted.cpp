@@ -1,16 +1,50 @@
-#include <stdio.h>
-#include <unistd.h>
 #include <errno.h>
+#include <getopt.h>
+#include <stdio.h>
+#include <string>
+#include <unistd.h>
+#include <vector>
 
 #include <libnl3/netlink/netlink.h>
 #include <libnl3/netlink/route/addr.h>
-#include <libnl3/netlink/route/rule.h>
-#include <libnl3/netlink/route/route.h>
 #include <libnl3/netlink/route/nexthop.h>
+#include <libnl3/netlink/route/route.h>
+#include <libnl3/netlink/route/rule.h>
 
 enum {
     ROUTE_PROTOCOL_KERNEL = 2
 };
+
+static std::vector<std::pair<int, unsigned int>> g_set_route_metrics; //< Metrics supplied via --set-route-metric command line option, keyed by netlink metric value
+static bool g_dump; //< Dump cache on startup for debugging
+
+/**
+ * Extract the first two tokens from a string as a destructuring convenience, e.g.,
+ *   auto [key, value] = string_tokenize_pair(str, "=");
+ * If a string contains less than two tokens, empty string(s) are returned
+ */
+constexpr std::pair<std::string_view, std::string_view> string_tokenize_pair(std::string_view str, std::string_view delimiters)
+{
+    const size_t first_token = str.find_first_not_of(delimiters);
+    constexpr const std::string_view empty;
+    if (first_token == std::string::npos) {
+        // Empty string or string with only delimiters
+        return std::make_pair(str, empty);
+    }
+    const size_t first_delim = str.find_first_of(delimiters, first_token);
+    if (first_delim == std::string::npos) {
+        // No delimiters found after first token
+        return std::make_pair(str.substr(first_token), empty);
+    }
+    const size_t second_token = str.find_first_not_of(delimiters, first_delim);
+    if (second_token == std::string::npos) {
+        // No second token found
+        return std::make_pair(str.substr(first_token, first_delim - first_token), empty);
+    }
+    const size_t second_delim = str.find_first_of(delimiters, second_token);
+    return std::make_pair(str.substr(first_token, first_delim - first_token),
+                          str.substr(second_token, second_delim - second_token));
+}
 
 static void dump_obj(struct nl_object *obj, int action, const char *prefix)
 {
@@ -95,6 +129,11 @@ static void mirror_route_update(struct nl_cache *cache, struct nl_object *obj, i
     if (!rt)
         return;
 
+    for (const auto &[metric, value] : g_set_route_metrics) {
+        if (rtnl_route_set_metric(rt, metric, value) < 0)
+            nl_perror(errno, __func__);
+    }
+
     rtnl_route_set_table(rt, 1000 + ifindex);
     dump_obj((struct nl_object*) rt, action, "route");
 
@@ -123,6 +162,7 @@ static void mirror_route_update(struct nl_cache *cache, struct nl_object *obj, i
 
 static void mirror_route_new(struct nl_object *obj, void *sk)
 {
+    dump_obj((struct nl_object*) obj, NL_ACT_NEW, "route-init");
     mirror_route_update(NULL, obj, NL_ACT_NEW, sk);
 }
 
@@ -186,6 +226,60 @@ static void addr_rule_new(struct nl_object *obj, void *sk)
      addr_rule_update(NULL, obj, NL_ACT_NEW, sk);
 }
 
+static bool parse_opts(int argc, char **argv)
+{
+    enum long_option {
+        SET_ROUTE_METRIC,
+        DUMP,
+        HELP,
+        NUM_OPTIONS,
+    };
+    static const struct option long_options[]{
+        [SET_ROUTE_METRIC] = {"set-route-metric", required_argument},
+        [DUMP] = {"dump", no_argument},
+        [HELP] = {"help", no_argument},
+        [NUM_OPTIONS] = {},
+    };
+
+    while (true) {
+        int option_index = -1;
+        if (getopt_long_only(argc, argv, "", long_options, &option_index) == -1)
+            return true;
+
+        switch (option_index) {
+        case SET_ROUTE_METRIC: {
+            const auto [metric_name, metric_value_str] = string_tokenize_pair(optarg, "=");
+            if (metric_name.empty() || metric_value_str.empty()) {
+                fprintf(stderr, "Invalid syntax for --%s %s option\n", long_options[option_index].name, optarg);
+                fprintf(stderr, "Expected: --%s <key>=<value>\n", long_options[option_index].name);
+                return false;
+            }
+            const int metric = rtnl_route_str2metric(std::string(metric_name).c_str());
+            if (metric < 0) {
+                nl_perror(metric, ("Unable to parse metric " + std::string(metric_name)).c_str());
+                return false;
+            }
+            const unsigned int metric_value = std::stoul(std::string(metric_value_str));
+            g_set_route_metrics.emplace_back(metric, metric_value);
+            break;
+        }
+
+        case DUMP:
+            g_dump = true;
+            break;
+
+        case HELP:
+        default:
+            fprintf(stderr, "Usage: %s [...]\n\n", argv[0]);
+            fprintf(stderr, "\t--%-16s %-16s - %s\n", long_options[SET_ROUTE_METRIC].name, "<name>=<value>",
+                    "Adds the specified metric to every replicated route; can be specified multiple times");
+            fprintf(stderr, "\t--%-16s %-16s - %s\n", long_options[DUMP].name, "",
+                    "Dump all observed attributes on startup");
+            return false;
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     struct nl_cache_mngr *mngr;
@@ -195,11 +289,8 @@ int main(int argc, char **argv)
     struct nl_sock *sk;
     int err;
 
-    // No options yet
-    if (getopt(argc, argv, "") != -1) {
-        fprintf(stderr, "Usage: %s\n", argv[0]);
+    if (!parse_opts(argc, argv))
         return EINVAL;
-    }
 
     if (!(sk = nl_socket_alloc()))
         return ENOMEM;
@@ -232,6 +323,14 @@ int main(int argc, char **argv)
     nl_cache_foreach(routes, mirror_route_new, sk);
     printf("Creating network source-specific lookup rules\n");
     nl_cache_foreach(addrs, addr_rule_new, sk);
+
+    if (g_dump) {
+        struct nl_dump_params dp = {
+            .dp_type = NL_DUMP_STATS,
+            .dp_fd = stdout,
+        };
+        nl_cache_mngr_info(mngr, &dp);
+    }
 
     printf("Waiting for changes\n");
 
