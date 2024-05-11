@@ -85,7 +85,7 @@ static void mirror_route_update(struct nl_cache *cache, struct nl_object *obj, i
         return;
     // Skip IPv6 link-local destinations
     if (rtnl_route_get_family(rt) == AF_INET6) {
-        uint8_t *addr = nl_addr_get_binary_addr(rtnl_route_get_dst(rt));
+        const uint8_t *addr = reinterpret_cast<uint8_t*>(nl_addr_get_binary_addr(rtnl_route_get_dst(rt)));
         if (addr[0] == 0xfe) {
             return;
         }
@@ -203,14 +203,13 @@ int main(int argc, char **argv)
 
     if (!(sk = nl_socket_alloc()))
         return ENOMEM;
-    if ((err = nl_connect(sk, NETLINK_ROUTE)) < 0)
-        goto out_nlerr;
-    if ((err = nl_cache_mngr_alloc(NULL, NETLINK_ROUTE, NL_AUTO_PROVIDE, &mngr)) < 0)
-        goto out_nlerr;
-    if ((err = nl_cache_mngr_add(mngr, "route/route", mirror_route_update, sk, &routes)) < 0)
-        goto out_nlerr;
-    if ((err = nl_cache_mngr_add(mngr, "route/addr", addr_rule_update, sk, &addrs)) < 0)
-        goto out_nlerr;
+    if ((err = nl_connect(sk, NETLINK_ROUTE)) < 0 ||
+        (err = nl_cache_mngr_alloc(NULL, NETLINK_ROUTE, NL_AUTO_PROVIDE, &mngr)) < 0 ||
+        (err = nl_cache_mngr_add(mngr, "route/route", mirror_route_update, sk, &routes)) < 0 ||
+        (err = nl_cache_mngr_add(mngr, "route/addr", addr_rule_update, sk, &addrs)) < 0) {
+        nl_perror(err, "netlink");
+        return err;
+    }
 
     // Use line buffering to improve the debug utility of systemd's journal:
     setlinebuf(stdout);
@@ -218,8 +217,11 @@ int main(int argc, char **argv)
     // In later kernels, a protocol field attached to each rule can be used as an
     // selector instead of table id ranges
     printf("Deleting routing policy rules matching lookup table > 1000\n");
-    if ((err = rtnl_rule_alloc_cache(sk, AF_UNSPEC, &rules)) < 0)
-        goto out_nlerr;
+    if ((err = rtnl_rule_alloc_cache(sk, AF_UNSPEC, &rules)) < 0) {
+        nl_perror(err, "netlink");
+        return err;
+    }
+
     nl_cache_foreach(rules, rule_flush_ours, sk);
     nl_cache_free(rules);
 
@@ -240,8 +242,4 @@ int main(int argc, char **argv)
     nl_cache_mngr_free(mngr);
     nl_socket_free(sk);
     return 0;
-
-out_nlerr:
-    nl_perror(err, "netlink");
-    return err;
 }

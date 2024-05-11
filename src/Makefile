@@ -1,5 +1,6 @@
-CFLAGS += -Wall -g -Os -I/usr/include/libnl3
-LDFLAGS += -lnl-3 -lnl-route-3
+CPPFLAGS += -I/usr/include/libnl3
+CXXFLAGS += -std=gnu++20 -Wall -g -Os
+LDLIBS += -lnl-3 -lnl-route-3
 
 all: symrouted
 

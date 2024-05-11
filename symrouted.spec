@@ -8,9 +8,15 @@ URL:            https://github.com/knneth/symrouted
 Source:         %{name}-%{version}.tgz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:  gcc, libnl3-devel
+BuildRequires:  devtoolset-11-build
+BuildRequires:  devtoolset-11-gcc-c++
+BuildRequires:  devtoolset-11-make
+BuildRequires:  libnl3-devel
 Requires:       libnl3
 %{?systemd_requires}
+%if 0%{?enable_devtoolset11:1}
+%enable_devtoolset11
+%endif
 
 %description
 The symrouted program uses routing policies to allow traffic from different
@@ -46,10 +52,10 @@ rm -rf "$RPM_BUILD_ROOT"
 %license LICENSE
 
 %changelog
-* Tue Jul 26 2018 Kenneth Klette Jonassen <kenneth@bridgetech.tv> - 0.1.3
+* Thu Jul 26 2018 Kenneth Klette Jonassen <kenneth@bridgetech.tv> - 0.1.3
 - Ignore routes to IPv6 link-local subnets
 
-* Tue Jul 26 2018 Kenneth Klette Jonassen <kenneth@bridgetech.tv> - 0.1.2
+* Thu Jul 26 2018 Kenneth Klette Jonassen <kenneth@bridgetech.tv> - 0.1.2
 - Support NL_ACT_CHANGE routing events
 
 * Tue Jul 10 2018 Kenneth Klette Jonassen <kenneth@bridgetech.tv> - 0.1.1

@@ -7,4 +7,4 @@ before_install:
  - sudo docker pull centos:7
 
 script:
- - sudo docker run --rm=true -v `pwd`:/git centos:7 /bin/bash -c "yum install -y make gcc rpm-build libnl3-devel && cd /git && chown -R root:root . && ./buildrpm.sh"
+ - sudo docker run --rm=true -v `pwd`:/git centos:7 /bin/bash -c "yum install -y devtoolset-11-build devtoolset-11-make devtoolset-11-gcc-c++ rpm-build libnl3-devel && cd /git && chown -R root:root . && ./buildrpm.sh"
