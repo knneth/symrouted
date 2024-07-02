@@ -1,16 +1,17 @@
 CPPFLAGS += -I/usr/include/libnl3
 CXXFLAGS += -std=gnu++20 -Wall -g -Os
 LDLIBS += -lnl-3 -lnl-route-3
+prefix ?= /usr
 
 all: symrouted
 
-install: all symrouted.service
-	mkdir -p $(DESTDIR)/usr/sbin
-	install symrouted $(DESTDIR)/usr/sbin
-	mkdir -p $(DESTDIR)/usr/lib/systemd/system
-	install -m 644 symrouted.service $(DESTDIR)/usr/lib/systemd/system
+install: all
+	mkdir -p "$(DESTDIR)$(prefix)/sbin"
+	$(INSTALL) -p -m 755 -t "$(DESTDIR)$(prefix)/sbin" symrouted
+	mkdir -p "$(DESTDIR)$(prefix)/lib/systemd/system"
+	$(INSTALL) -p -m 644 -t "$(DESTDIR)$(prefix)/lib/systemd/system" symrouted.service
 
 clean:
 	-rm symrouted
 
-.PHONY: clean
+.PHONY: clean install all
