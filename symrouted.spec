@@ -30,7 +30,7 @@ local IP addresses to be forwarded to a different next hop (gateway).
 
 %install
 rm -rf "$RPM_BUILD_ROOT"
-make install DESTDIR="$RPM_BUILD_ROOT"
+make install DESTDIR="$RPM_BUILD_ROOT" prefix=%{_prefix}
 
 %clean
 make clean
@@ -47,11 +47,15 @@ rm -rf "$RPM_BUILD_ROOT"
 
 %files
 %defattr(-,root,root)
-/usr/lib/systemd/system/%{name}.service
+%{_prefix}/lib/systemd/system/%{name}.service
 %{_sbindir}/*
 %license LICENSE
 
 %changelog
+* Fri May 10 2024 Kenneth Klette Jonassen <kenneth@bridgetech.tv> - 1.0
+- Add the --set-route-metric option, allowing user-specified metrics to be set on all replicated routes.
+- Add --dump and --help options
+
 * Thu Jul 26 2018 Kenneth Klette Jonassen <kenneth@bridgetech.tv> - 0.1.3
 - Ignore routes to IPv6 link-local subnets
 

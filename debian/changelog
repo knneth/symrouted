@@ -1,0 +1,5 @@
+symrouted (1.0-1) noble; urgency=low
+
+  * Initial packaging for Ubuntu 24.04
+
+ -- Kenneth Klette Jonassen <kenneth@bridgetech.tv>  Tue, 02 Jul 2024 00:00:00 +0000

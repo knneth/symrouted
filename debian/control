@@ -1,0 +1,24 @@
+Source: symrouted
+Section: net
+Priority: optional
+Maintainer: Kenneth Klette Jonassen <kenneth@bridgetech.tv>
+Build-Depends: debhelper-compat (= 13),
+  git-buildpackage,
+  libnl-3-dev,
+  libnl-route-3-dev
+Standards-Version: 4.5.1
+Homepage: https://github.com/knneth/symrouted
+Rules-Requires-Root: no
+
+Package: symrouted
+Architecture: any
+Protected: no
+Essential: no
+Multi-Arch: no
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Symmetric Routing Daemon
+ The symrouted program mirrors the global routing table into per-interface
+ routing tables. It utilizes policy-based routing to steer packets from an IP
+ address on interface N to the routing table for interface N. Unlike manually
+ configured rules, it doesn't require configuration and works with DHCP-assigned
+ addresses.
